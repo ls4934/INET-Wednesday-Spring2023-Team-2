@@ -66,7 +66,11 @@
                         <a href={% url 'account:profile_page' request.user %}>
                             <div class="profile-notification-container">
                             <i class='bx bx-user icon'></i>
-                            <span class="red-dot hidden"></span>
+                            {% if friend_request_count > 0 %}
+                                <span class="red-dot"></span>
+                            {% else %}
+                                <span class="red-dot hidden"></span>
+                            {% endif %}
                             </div>
                             <span class="text nav-text">Profile</span>
                         
@@ -76,10 +80,14 @@
 
                     <li class="nav-link" id="testy" onclick="getPosts();">
                         <a href={% url 'account:notifications' %}>
-                            <!-- <div class="profile-notification-container"> -->
+                            <div class="profile-notification-container">
                             <i class='bx bx-bell icon'></i>
-                            <!-- <span class="red-dot "></span>
-                            </div> -->
+                            {% if tagged_count > 0 %}
+                                <span class="red-dot"></span>
+                            {% else %}
+                                <span class="red-dot hidden"></span>
+                            {% endif %}
+                            </div>
                             <span class="text nav-text">Notifications</span>
                         </a>
                     </li>
@@ -153,7 +161,7 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log(data);
-                    return data.search_results.map(result => {
+                    return data.search_results.slice(0, 10).map(result => {
                         if (result.question_text) {
                             return {
                                 type: "post",
@@ -212,6 +220,67 @@
             window.location.href = `/account/profile/${id}/`;
         }
     }
+
+var lastSearchQuery = '';
+var currentPage = 1;
+var totalPages = 1;
+var isLoading = false;
+
+window.addEventListener('scroll', function() {
+  var scrollPosition = window.pageYOffset;
+  var windowSize = window.innerHeight;
+  var bodyHeight = document.body.offsetHeight;
+
+  if (scrollPosition > (bodyHeight - windowSize - 200) && currentPage < totalPages && !isLoading) {
+    isLoading = true;
+
+    var nextPage = currentPage + 1;
+    var url = `/posts/search/?search=${lastSearchQuery}&page=${nextPage}`;
+
+    fetch(url)
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function(data) {
+        var results = data.search_results.slice(0, 10).map(function(result) {
+          if (result.question_text) {
+            return {
+              type: "post",
+              id: result.id,
+              question: result.question_text,
+              options: result.options.map(function(option) {
+                return option.choice_text;
+              })
+            }
+          } else if (result.username) {
+            return {
+              type: "user",
+              id: result.id,
+              username: result.username
+            }
+          }
+        });
+
+        var autocomplete = Autocomplete.getInstance('#autocomplete');
+        autocomplete.addResults(results);
+
+        currentPage = nextPage;
+        totalPages = data.total_pages;
+        isLoading = false;
+      })
+      .catch(function(error) {
+        console.error(error);
+        isLoading = false;
+      });
+  }
+});
+
+var autocomplete = Autocomplete.getInstance('#autocomplete');
+autocomplete.on('search', function(input) {
+  lastSearchQuery = input;
+  currentPage = 1;
+  totalPages = 1;
+});
 
 
 </script>
