@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import SearchFriendsView
 
 app_name = "connections"
 
@@ -38,4 +39,5 @@ urlpatterns = [
         views.exit_group_view,
         name="exit_group",
     ),
+    path("search/", SearchFriendsView.as_view(), name="search_friends"),
 ]
