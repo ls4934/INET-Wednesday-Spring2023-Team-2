@@ -81,11 +81,13 @@ class SearchFriendsView(TemplateView):
             ).distinct()
 
             for group in group_results:
+                connection = group.connection_id_for_group
                 search_results.append(
                     {
                         "id": group.id,
                         "group_name": group.group_name,
                         "group_id": group.id,
+                        "connection_id": connection.id,
                         "type": "group",
                     }
                 )
@@ -334,9 +336,9 @@ class Get_Chat_Group_Creation_View(View):
                         group_.group_name = chat_group_creation_form.cleaned_data[
                             "group_name"
                         ]
-                        group_.members.set(
-                            chat_group_creation_form.cleaned_data["members"]
-                        )
+                        members = list(chat_group_creation_form.cleaned_data["members"])
+                        members.apend(request.user)
+                        group_.members.set(members)
                         group_.save()
 
                     else:
@@ -346,9 +348,9 @@ class Get_Chat_Group_Creation_View(View):
                                 "group_name"
                             ],
                         )
-                        group_.members.set(
-                            chat_group_creation_form.cleaned_data["members"]
-                        )
+                        members = list(chat_group_creation_form.cleaned_data["members"])
+                        members.append(request.user)
+                        group_.members.set(members)
                         group_.save()
                 except Exception as e:
                     return JsonResponse(
