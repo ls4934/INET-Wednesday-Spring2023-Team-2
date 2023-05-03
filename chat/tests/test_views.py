@@ -155,3 +155,4 @@ class TestChatViews(TestCase):
             }
         )
         self.assertEqual(response.content.decode(), expected_response.content.decode())
+
