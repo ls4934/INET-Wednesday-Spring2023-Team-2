@@ -1,5 +1,11 @@
 from django.test import TestCase, Client, RequestFactory
 from django.urls import reverse
+from chat.models import Group_Connection
+from unittest.mock import patch
+from django.contrib.auth import get_user_model
+from django.http import JsonResponse
+from django.core.files.uploadedfile import SimpleUploadedFile
+import json
 
 from login.models import Custom_User
 from chat.views import (
@@ -111,3 +117,41 @@ class TestChatViews(TestCase):
         expected_message = "This is a long messa..."
         formatted_message = latest_message_formatting(message)
         self.assertEqual(formatted_message, expected_message)
+
+    def test_search_friends(self):
+        user1 = Custom_User.objects.create(
+            username="user1", email="user1@test.com", password="testpassword"
+        )
+        user2 = Custom_User.objects.create(
+            username="user2", email="user2@test.com", password="testpassword"
+        )
+        user3 = Custom_User.objects.create(
+            username="user3", email="user3@test.com", password="testpassword"
+        )
+        group1 = Group_Connection.objects.create(
+            group_created_by=user1, group_name="Group 1"
+        )
+        group1.members.add(user2)
+        group1.members.add(user3)
+        connect2 = Connection_Model.objects.create(
+            from_user=user2, to_user=user1, connection_status="Accepted"
+        )
+        group1_connection = Connection_Model.objects.create(
+            group=group1, connection_status="Accepted"
+        )
+        self.client.force_login(user1)
+        url = reverse("connections:search_friends")
+        response = self.client.get(url + "?search=user2")
+        expected_response = JsonResponse(
+            {
+                "search_results": [
+                    {
+                        "id": user2.id,
+                        "username": user2.username,
+                        "connection_id": connect2.id,
+                        "type": "user",
+                    }
+                ]
+            }
+        )
+        self.assertEqual(response.content.decode(), expected_response.content.decode())
